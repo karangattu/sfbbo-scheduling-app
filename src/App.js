@@ -87,19 +87,34 @@ const EventApp = () => {
     };
   }, []);
 
+  // Helper function to create a local date from YYYY-MM-DD
+  function getLocalDateFromString(dateString) {
+    if (!dateString) return null;
+    const [year, month, day] = dateString.split("-");
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+
   // Helper function to check if an event is in the past
   const isEventPast = (event) => {
-    const eventDateTime = new Date(`${event.date}T${event.toTime}`);
+    // Use local date construction for correct comparison
+    const [toHour, toMinute] = event.toTime ? event.toTime.split(":") : ["0", "0"];
+    const eventDate = getLocalDateFromString(event.date);
+    if (!eventDate) return false;
+    eventDate.setHours(Number(toHour), Number(toMinute));
     const now = new Date();
-    return eventDateTime < now;
+    return eventDate < now;
   };
 
   // Helper function to sort events by date and time
   const sortEventsByDateTime = (events) => {
     return events.sort((a, b) => {
-      const dateTimeA = new Date(`${a.date}T${a.fromTime}`);
-      const dateTimeB = new Date(`${b.date}T${b.fromTime}`);
-      return dateTimeA - dateTimeB;
+      const [fromHourA, fromMinuteA] = a.fromTime ? a.fromTime.split(":") : ["0", "0"];
+      const [fromHourB, fromMinuteB] = b.fromTime ? b.fromTime.split(":") : ["0", "0"];
+      const dateA = getLocalDateFromString(a.date);
+      const dateB = getLocalDateFromString(b.date);
+      if (dateA) dateA.setHours(Number(fromHourA), Number(fromMinuteA));
+      if (dateB) dateB.setHours(Number(fromHourB), Number(fromMinuteB));
+      return dateA - dateB;
     });
   };
 
@@ -177,7 +192,7 @@ const EventApp = () => {
 
     // Check if date is not in the past
     if (formData.date) {
-      const selectedDate = new Date(formData.date);
+      const selectedDate = getLocalDateFromString(formData.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (selectedDate < today) {
@@ -191,7 +206,8 @@ const EventApp = () => {
 
   // Helper function to format date
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = getLocalDateFromString(dateString);
+    if (!date) return "";
     return date.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
@@ -387,7 +403,7 @@ const EventApp = () => {
     }
 
     // Check if date is not in the past (optional - you may want to allow editing past events)
-    const selectedDate = new Date(editFormData.date);
+    const selectedDate = getLocalDateFromString(editFormData.date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (selectedDate < today) {
