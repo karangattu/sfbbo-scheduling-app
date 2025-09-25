@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Calendar,
   Clock,
@@ -17,6 +17,11 @@ import {
   Sparkles,
   ArrowRight,
   ClipboardCheck,
+  BarChart3,
+  UserCheck,
+  Baby,
+  Mail,
+  Edit,
 } from "lucide-react";
 import { AddToCalendarButton } from "add-to-calendar-button-react";
 import { firebaseOperations } from "./firebase";
@@ -73,6 +78,14 @@ const EventApp = () => {
   const [editEventId, setEditEventId] = useState(null);
   const [editFormData, setEditFormData] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showMetricsModal, setShowMetricsModal] = useState(false);
+  const [metricsEventId, setMetricsEventId] = useState(null);
+  const [metricsData, setMetricsData] = useState({
+    adultAttendees: "",
+    childAttendees: "",
+    newsletterSignups: "",
+    notes: "",
+  });
 
   // Load initial data from Firebase with real-time updates
   useEffect(() => {
@@ -100,7 +113,7 @@ const EventApp = () => {
   }
 
   // Helper function to check if an event is in the past
-  const isEventPast = (event) => {
+  const isEventPast = useCallback((event) => {
     // Use local date construction for correct comparison
     const [toHour, toMinute] = event.toTime ? event.toTime.split(":") : ["0", "0"];
     const eventDate = getLocalDateFromString(event.date);
@@ -108,10 +121,10 @@ const EventApp = () => {
     eventDate.setHours(Number(toHour), Number(toMinute));
     const now = new Date();
     return eventDate < now;
-  };
+  }, []);
 
   // Helper function to sort events by date and time
-  const sortEventsByDateTime = (events) => {
+  const sortEventsByDateTime = useCallback((events) => {
     return events.sort((a, b) => {
       const [fromHourA, fromMinuteA] = a.fromTime ? a.fromTime.split(":") : ["0", "0"];
       const [fromHourB, fromMinuteB] = b.fromTime ? b.fromTime.split(":") : ["0", "0"];
@@ -121,7 +134,7 @@ const EventApp = () => {
       if (dateB) dateB.setHours(Number(fromHourB), Number(fromMinuteB));
       return dateA - dateB;
     });
-  };
+  }, []);
 
   // Admin login function
   const handleAdminLogin = () => {
@@ -280,7 +293,7 @@ const EventApp = () => {
   };
 
   // Categorize and sort events
-  const categorizedEvents = () => {
+  const categorizedEvents = useCallback(() => {
     const upcomingEvents = [];
     const pastEvents = [];
 
@@ -296,7 +309,7 @@ const EventApp = () => {
       upcoming: sortEventsByDateTime(upcomingEvents),
       past: sortEventsByDateTime(pastEvents).reverse(), // Most recent past events first
     };
-  };
+  }, [events, isEventPast, sortEventsByDateTime]);
 
   // Helper to show toast
   const showToast = (msg) => {
@@ -304,7 +317,7 @@ const EventApp = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const categorized = useMemo(() => categorizedEvents(), [events]);
+  const categorized = useMemo(() => categorizedEvents(), [events, categorizedEvents]);
   const upcomingEvents = categorized.upcoming;
   const pastEvents = categorized.past;
 
@@ -562,6 +575,49 @@ const EventApp = () => {
     }
   };
 
+  // Metrics modal handlers
+  const openMetricsModal = (event) => {
+    setMetricsEventId(event.id);
+    setMetricsData({
+      adultAttendees: event.postEventMetrics?.adultAttendees || "",
+      childAttendees: event.postEventMetrics?.childAttendees || "",
+      newsletterSignups: event.postEventMetrics?.newsletterSignups || "",
+      notes: event.postEventMetrics?.notes || "",
+    });
+    setShowMetricsModal(true);
+  };
+
+  const closeMetricsModal = () => {
+    setShowMetricsModal(false);
+    setMetricsEventId(null);
+    setMetricsData({
+      adultAttendees: "",
+      childAttendees: "",
+      newsletterSignups: "",
+      notes: "",
+    });
+  };
+
+  const saveEventMetrics = async () => {
+    if (!metricsEventId) return;
+
+    const metrics = {
+      adultAttendees: parseInt(metricsData.adultAttendees) || 0,
+      childAttendees: parseInt(metricsData.childAttendees) || 0,
+      newsletterSignups: parseInt(metricsData.newsletterSignups) || 0,
+      notes: metricsData.notes.trim(),
+    };
+
+    try {
+      await firebaseOperations.updateEventMetrics(metricsEventId, metrics);
+      showToast("Event metrics saved successfully");
+      closeMetricsModal();
+    } catch (error) {
+      console.error("Failed to save metrics:", error);
+      showToast("Failed to save metrics. Please try again.");
+    }
+  };
+
   const EventCard = ({ event }) => {
     const [signupName, setSignupName] = useState("");
     const [signupEmail, setSignupEmail] = useState("");
@@ -714,6 +770,20 @@ const EventApp = () => {
               )}
               {isAdmin && (
                 <div className="flex items-center gap-2">
+                  {isPast && (
+                    <button
+                      onClick={() => openMetricsModal(event)}
+                      className={`inline-flex items-center justify-center rounded-full border border-transparent p-2 transition-colors ${
+                        isDarkMode
+                          ? "bg-green-500/10 text-green-300 hover:bg-green-500/20"
+                          : "bg-green-50 text-green-600 hover:bg-green-100"
+                      }`}
+                      aria-label={`Add metrics for: ${event.title}`}
+                      title="Add post-event metrics"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => openEditModal(event)}
                     className={`inline-flex items-center justify-center rounded-full border border-transparent p-2 transition-colors ${
@@ -724,19 +794,7 @@ const EventApp = () => {
                     aria-label={`Edit event: ${event.title}`}
                     title="Edit event"
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                    </svg>
+                    <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => deleteEvent(event.id, event.title)}
@@ -1011,6 +1069,89 @@ const EventApp = () => {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {isPast && event.postEventMetrics && (
+            <div
+              className={`rounded-2xl border px-4 py-4 sm:px-6 sm:py-5 ${
+                isDarkMode
+                  ? "border-green-500/30 bg-green-500/10"
+                  : "border-green-200 bg-green-50"
+              }`}
+              aria-label="Post-event metrics"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className={`w-5 h-5 ${isDarkMode ? "text-green-300" : "text-green-600"}`} />
+                  <h4 className={`font-semibold text-sm ${isDarkMode ? "text-green-100" : "text-green-800"}`}>
+                    Post-Event Metrics
+                  </h4>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className={`text-center rounded-xl px-3 py-2 ${
+                    isDarkMode ? "bg-green-900/30" : "bg-white"
+                  }`}>
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <UserCheck className="w-4 h-4" />
+                      <span className={`text-xs font-medium ${
+                        isDarkMode ? "text-green-200" : "text-green-700"
+                      }`}>Adults</span>
+                    </div>
+                    <div className={`text-lg font-bold ${
+                      isDarkMode ? "text-green-100" : "text-green-800"
+                    }`}>
+                      {event.postEventMetrics.adultAttendees}
+                    </div>
+                  </div>
+                  <div className={`text-center rounded-xl px-3 py-2 ${
+                    isDarkMode ? "bg-green-900/30" : "bg-white"
+                  }`}>
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Baby className="w-4 h-4" />
+                      <span className={`text-xs font-medium ${
+                        isDarkMode ? "text-green-200" : "text-green-700"
+                      }`}>Kids</span>
+                    </div>
+                    <div className={`text-lg font-bold ${
+                      isDarkMode ? "text-green-100" : "text-green-800"
+                    }`}>
+                      {event.postEventMetrics.childAttendees}
+                    </div>
+                  </div>
+                  <div className={`text-center rounded-xl px-3 py-2 ${
+                    isDarkMode ? "bg-green-900/30" : "bg-white"
+                  }`}>
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Mail className="w-4 h-4" />
+                      <span className={`text-xs font-medium ${
+                        isDarkMode ? "text-green-200" : "text-green-700"
+                      }`}>Newsletter</span>
+                    </div>
+                    <div className={`text-lg font-bold ${
+                      isDarkMode ? "text-green-100" : "text-green-800"
+                    }`}>
+                      {event.postEventMetrics.newsletterSignups}
+                    </div>
+                  </div>
+                </div>
+                {event.postEventMetrics.notes && (
+                  <div className={`rounded-xl px-3 py-2 ${
+                    isDarkMode ? "bg-green-900/30" : "bg-white"
+                  }`}>
+                    <div className={`text-xs font-medium mb-1 ${
+                      isDarkMode ? "text-green-200" : "text-green-700"
+                    }`}>
+                      Notes:
+                    </div>
+                    <div className={`text-sm ${
+                      isDarkMode ? "text-green-100" : "text-green-800"
+                    }`}>
+                      {event.postEventMetrics.notes}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -2162,6 +2303,160 @@ const EventApp = () => {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMetricsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div
+            className={`w-full max-w-md rounded-3xl border px-6 py-8 shadow-2xl ${
+              isDarkMode ? "border-gray-800 bg-gray-900" : "border-slate-200 bg-white"
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Add post-event metrics"
+          >
+            <div className="mb-6 space-y-2 text-center">
+              <h2
+                className={`text-2xl font-bold ${
+                  isDarkMode ? "text-white" : "text-slate-900"
+                }`}
+              >
+                Post-Event Metrics
+              </h2>
+              <p
+                className={`text-sm ${
+                  isDarkMode ? "text-gray-400" : "text-slate-600"
+                }`}
+              >
+                Record attendance and engagement data for this completed event.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label
+                    className={`text-sm font-medium ${
+                      isDarkMode ? "text-gray-300" : "text-slate-700"
+                    }`}
+                  >
+                    Adult Attendees
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={metricsData.adultAttendees}
+                    onChange={(e) =>
+                      setMetricsData({
+                        ...metricsData,
+                        adultAttendees: e.target.value,
+                      })
+                    }
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                      isDarkMode
+                        ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                        : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
+                    }`}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label
+                    className={`text-sm font-medium ${
+                      isDarkMode ? "text-gray-300" : "text-slate-700"
+                    }`}
+                  >
+                    Child Attendees
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={metricsData.childAttendees}
+                    onChange={(e) =>
+                      setMetricsData({
+                        ...metricsData,
+                        childAttendees: e.target.value,
+                      })
+                    }
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                      isDarkMode
+                        ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                        : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
+                    }`}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label
+                  className={`text-sm font-medium ${
+                    isDarkMode ? "text-gray-300" : "text-slate-700"
+                  }`}
+                >
+                  Newsletter Signups
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={metricsData.newsletterSignups}
+                  onChange={(e) =>
+                    setMetricsData({
+                      ...metricsData,
+                      newsletterSignups: e.target.value,
+                    })
+                  }
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                    isDarkMode
+                      ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                      : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
+                  }`}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label
+                  className={`text-sm font-medium ${
+                    isDarkMode ? "text-gray-300" : "text-slate-700"
+                  }`}
+                >
+                  Notes (optional)
+                </label>
+                <textarea
+                  value={metricsData.notes}
+                  onChange={(e) =>
+                    setMetricsData({
+                      ...metricsData,
+                      notes: e.target.value,
+                    })
+                  }
+                  className={`h-20 w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                    isDarkMode
+                      ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                      : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
+                  }`}
+                  placeholder="Any additional observations or feedback..."
+                />
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={saveEventMetrics}
+                  className="inline-flex flex-1 items-center justify-center rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-500"
+                >
+                  Save Metrics
+                </button>
+                <button
+                  onClick={closeMetricsModal}
+                  className={`inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
+                    isDarkMode
+                      ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

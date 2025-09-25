@@ -81,6 +81,23 @@ export const firebaseOperations = {
     }
   },
 
+  // Update event metrics (for post-event data)
+  updateEventMetrics: async (eventId, metrics) => {
+    try {
+      const eventRef = doc(db, "events", eventId);
+      await updateDoc(eventRef, {
+        postEventMetrics: {
+          ...metrics,
+          updatedAt: new Date().toISOString(),
+        }
+      });
+      return { id: eventId, postEventMetrics: metrics };
+    } catch (error) {
+      console.error("Error updating event metrics:", error);
+      throw error;
+    }
+  },
+
   // Delete event
   deleteEvent: async (eventId) => {
     try {
