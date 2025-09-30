@@ -12,10 +12,6 @@ import {
   CalendarPlus,
   Moon,
   Sun,
-  Info,
-  HelpCircle,
-  Sparkles,
-  ArrowRight,
   ClipboardCheck,
   BarChart3,
   UserCheck,
@@ -420,7 +416,7 @@ const EventApp = () => {
     }
   };
 
-  const signUpForEvent = async (eventId, attendeeName, attendeeEmail) => {
+  const signUpForEvent = async (eventId, attendeeName, attendeeEmail, shiftPreference = "full") => {
     if (!attendeeName.trim() || !attendeeEmail.trim()) return;
 
     // Basic email validation
@@ -448,6 +444,7 @@ const EventApp = () => {
       const newAttendee = {
         name: attendeeName,
         email: attendeeEmail,
+        shiftPreference: shiftPreference,
         signedUpAt: new Date().toISOString(),
       };
 
@@ -621,6 +618,7 @@ const EventApp = () => {
   const EventCard = ({ event }) => {
     const [signupName, setSignupName] = useState("");
     const [signupEmail, setSignupEmail] = useState("");
+    const [shiftPreference, setShiftPreference] = useState("full");
     const [signingUp, setSigningUp] = useState(false);
     const [showAttendees, setShowAttendees] = useState(false);
     const isPast = isEventPast(event);
@@ -630,72 +628,42 @@ const EventApp = () => {
     const categoryInfo =
       eventCategories.find((cat) => cat.value === event.category) ||
       eventCategories[0];
-    const badgeClass = isDarkMode
-      ? categoryInfo.darkColor || categoryInfo.color
-      : categoryInfo.color;
 
     const handleSignUp = async () => {
       if (!signupName.trim() || !signupEmail.trim()) return;
 
       setSigningUp(true);
-      await signUpForEvent(event.id, signupName, signupEmail);
+      await signUpForEvent(event.id, signupName, signupEmail, shiftPreference);
       setSignupName("");
       setSignupEmail("");
+      setShiftPreference("full");
       setSigningUp(false);
-    };
-
-    // Export attendees to CSV (only for admins)
-    const exportAttendees = () => {
-      if (event.attendees.length === 0 || !isAdmin) return;
-
-      const csvContent = [
-        ["Name", "Email", "Signed Up At"],
-        ...event.attendees.map((attendee) => [
-          attendee.name,
-          attendee.email || "N/A",
-          new Date(attendee.signedUpAt).toLocaleString(),
-        ]),
-      ]
-        .map((row) => row.join(","))
-        .join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${event.title}-attendees.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
     };
 
     return (
       <article
-        className={`relative overflow-hidden rounded-3xl border transition-all duration-300 ${
+        className={`rounded-lg border transition-colors ${
           isDarkMode
             ? isPast
-              ? "bg-gray-900/60 border-gray-700/70 hover:border-gray-600"
-              : "bg-gray-900/40 border-gray-700 hover:border-gray-500 hover:shadow-2xl hover:shadow-black/40"
+              ? "bg-gray-900/30 border-gray-800"
+              : "bg-gray-900/50 border-gray-800 hover:border-gray-700"
             : isPast
-            ? "bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-lg"
-            : "bg-white border-gray-200 hover:border-blue-200 hover:shadow-xl"
+            ? "bg-gray-50 border-gray-200"
+            : "bg-white border-gray-300 hover:border-gray-400"
         }`}
         role="region"
         aria-label={`Event card: ${event.title}`}
       >
-        <div
-          className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${categoryInfo.gradient}`}
-          aria-hidden="true"
-        />
-        <div className="p-6 sm:p-8 space-y-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-3">
+        <div className="p-5 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h3
-                  className={`text-2xl font-semibold leading-tight transition-colors ${
+                  className={`text-lg font-semibold ${
                     isPast
                       ? isDarkMode
                         ? "text-gray-400"
-                        : "text-gray-700"
+                        : "text-gray-500"
                       : isDarkMode
                       ? "text-white"
                       : "text-gray-900"
@@ -706,79 +674,58 @@ const EventApp = () => {
                   {event.title}
                 </h3>
                 <span
-                  className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full ${badgeClass}`}
+                  className={`text-xs px-2 py-0.5 rounded ${
+                    isDarkMode
+                      ? "bg-gray-800 text-gray-400"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
                   aria-label={`Category: ${categoryInfo.label}`}
                 >
                   {categoryInfo.label}
                 </span>
                 {isPast && (
                   <span
-                    className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${
+                    className={`text-xs px-2 py-0.5 rounded ${
                       isDarkMode
-                        ? "bg-gray-700 text-gray-200"
-                        : "bg-slate-200 text-slate-700"
+                        ? "bg-gray-800 text-gray-400"
+                        : "bg-gray-100 text-gray-600"
                     }`}
                     aria-label="Past event"
                   >
-                    <Archive className="w-3 h-3" /> Past event
+                    Past
                   </span>
                 )}
               </div>
               <div
-                className={`text-sm flex flex-wrap items-center gap-x-4 gap-y-2 ${
+                className={`text-sm flex flex-wrap items-center gap-x-3 gap-y-1 ${
                   isDarkMode ? "text-gray-400" : "text-gray-600"
                 }`}
               >
-                <span className="inline-flex items-center gap-2">
-                  <Info className="w-4 h-4" /> Hosted by
-                  <span
-                    className={
-                      isDarkMode ? "text-gray-200" : "text-gray-800"
-                    }
-                  >
-                    {event.creatorName}
-                  </span>
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  {event.attendees.length}
-                  <span className="hidden sm:inline">volunteer{event.attendees.length === 1 ? "" : "s"}</span>
-                  <span className="sm:hidden">vol.</span>
-                  signed up
+                <span>{event.creatorName}</span>
+                <span>•</span>
+                <span>
+                  {event.attendees.length} signed up
                 </span>
                 {event.maxAttendees && (
-                  <span className="inline-flex items-center gap-2">
-                    <Users className="w-4 h-4" /> {event.maxAttendees} spots
-                  </span>
+                  <>
+                    <span>•</span>
+                    <span>{event.maxAttendees} max</span>
+                  </>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {event.attendees.length > 0 && isAdmin && (
-                <button
-                  onClick={exportAttendees}
-                  className={`inline-flex items-center justify-center rounded-full border border-transparent px-3 py-1.5 text-sm font-medium transition-colors ${
-                    isDarkMode
-                      ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                  title="Export attendee list (Admin only)"
-                  aria-label="Export attendee list"
-                >
-                  Export CSV
-                </button>
-              )}
+            <div className="flex items-center gap-1">
               {isAdmin && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {isPast && (
                     <button
                       onClick={() => openMetricsModal(event)}
-                      className={`inline-flex items-center justify-center rounded-full border border-transparent p-2 transition-colors ${
+                      className={`p-2 rounded transition-colors ${
                         isDarkMode
-                          ? "bg-green-500/10 text-green-300 hover:bg-green-500/20"
-                          : "bg-green-50 text-green-600 hover:bg-green-100"
+                          ? "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                          : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                       }`}
-                      aria-label={`Add metrics for: ${event.title}`}
+                      aria-label="Add metrics"
                       title="Add post-event metrics"
                     >
                       <BarChart3 className="w-4 h-4" />
@@ -786,24 +733,24 @@ const EventApp = () => {
                   )}
                   <button
                     onClick={() => openEditModal(event)}
-                    className={`inline-flex items-center justify-center rounded-full border border-transparent p-2 transition-colors ${
+                    className={`p-2 rounded transition-colors ${
                       isDarkMode
-                        ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20"
-                        : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        ? "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                     }`}
-                    aria-label={`Edit event: ${event.title}`}
+                    aria-label="Edit event"
                     title="Edit event"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => deleteEvent(event.id, event.title)}
-                    className={`inline-flex items-center justify-center rounded-full border border-transparent p-2 transition-colors ${
+                    className={`p-2 rounded transition-colors ${
                       isDarkMode
-                        ? "bg-red-500/10 text-red-300 hover:bg-red-500/20"
-                        : "bg-red-50 text-red-600 hover:bg-red-100"
+                        ? "text-gray-400 hover:text-red-400 hover:bg-gray-800"
+                        : "text-gray-500 hover:text-red-600 hover:bg-gray-100"
                     }`}
-                    aria-label={`Delete event: ${event.title}`}
+                    aria-label="Delete event"
                     title="Delete event"
                   >
                     <X className="w-4 h-4" />
@@ -813,260 +760,131 @@ const EventApp = () => {
             </div>
           </div>
 
-          <p
-            className={`text-base leading-relaxed transition-colors ${
-              isPast
-                ? isDarkMode
-                  ? "text-gray-300"
-                  : "text-gray-600"
-                : isDarkMode
-                ? "text-gray-200"
-                : "text-gray-700"
-            }`}
-          >
-            {event.description}
-          </p>
-
-          <div
-            className="grid grid-cols-1 gap-3 sm:grid-cols-3"
-            role="list"
-            aria-label="Event details"
-          >
-            <div
-              className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
-                isDarkMode
-                  ? "border-gray-700 bg-gray-800/70 text-gray-100"
-                  : "border-gray-200 bg-gray-50 text-gray-700"
-              }`}
-              aria-label={`Date: ${formatDate(event.date)}`}
-            >
-              <Calendar
-                className={`w-4 h-4 ${
-                  isPast ? "text-gray-500" : "text-blue-500"
-                }`}
-              />
-              <span>{formatDate(event.date)}</span>
-            </div>
-            <div
-              className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
-                isDarkMode
-                  ? "border-gray-700 bg-gray-800/70 text-gray-100"
-                  : "border-gray-200 bg-gray-50 text-gray-700"
-              }`}
-              aria-label={`Time: ${formatTime(event.fromTime)} to ${formatTime(
-                event.toTime
-              )}`}
-            >
-              <Clock
-                className={`w-4 h-4 ${
-                  isPast ? "text-gray-500" : "text-green-500"
-                }`}
-              />
-              <span>
-                {formatTime(event.fromTime)} – {formatTime(event.toTime)}
-              </span>
-            </div>
-            <div
-              className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
-                isDarkMode
-                  ? "border-gray-700 bg-gray-800/70 text-gray-100"
-                  : "border-gray-200 bg-gray-50 text-gray-700"
-              }`}
-              aria-label={`Location: ${event.location}`}
-            >
-              <MapPin
-                className={`w-4 h-4 ${
-                  isPast ? "text-gray-500" : "text-purple-500"
-                }`}
-              />
-              <span>{event.location}</span>
-            </div>
-          </div>
-
-          {!isPast && (
-            <div
-              className={`rounded-2xl border px-4 py-4 sm:px-6 sm:py-5 ${
-                isDarkMode
-                  ? "border-blue-500/30 bg-blue-500/10"
-                  : "border-blue-200 bg-blue-50"
+          {event.description && (
+            <p
+              className={`text-sm ${
+                isDarkMode ? "text-gray-400" : "text-gray-600"
               }`}
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div
-                  className={`flex items-center gap-3 text-sm ${
-                    isDarkMode ? "text-blue-100" : "text-blue-700"
-                  }`}
-                >
-                  <CalendarPlus className="w-5 h-5" />
-                  <span>Add this event to your calendar to stay on track.</span>
-                </div>
-                <AddToCalendarButton
-                  name={event.title}
-                  description={event.description}
-                  startDate={event.date}
-                  startTime={event.fromTime}
-                  endTime={event.toTime}
-                  timeZone="America/Los_Angeles"
-                  location={event.location}
-                  options={["Apple", "Google", "iCal", "Microsoft365", "Outlook.com", "Yahoo"]}
-                  buttonStyle="round"
-                  size="3"
-                  hideIconButton
-                  hideTextLabelButton={false}
-                  label="Add to calendar"
-                  trigger="click"
-                  inline={false}
-                  listStyle="modal"
-                  iCalFileName={`sfbbo-${event.title
-                    .toLowerCase()
-                    .replace(/\s+/g, "-")}`}
-                />
-              </div>
-            </div>
+              {event.description}
+            </p>
           )}
 
           <div
-            className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-            aria-label="Attendee count"
+            className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${
+              isDarkMode ? "text-gray-400" : "text-gray-600"
+            }`}
+            role="list"
+            aria-label="Event details"
           >
-            <div
-              className={`flex items-center gap-3 text-sm font-medium ${
-                isDarkMode ? "text-gray-200" : "text-gray-700"
-              }`}
-            >
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                  isDarkMode
-                    ? "bg-gray-800 border border-gray-700"
-                    : "bg-gray-100 border border-gray-200"
-                }`}
-              >
-                <Users
-                  className={`w-5 h-5 ${
-                    isPast ? "text-gray-500" : "text-orange-500"
-                  }`}
-                />
-              </div>
-              <div className="space-y-0.5">
-                <span>
-                  {event.attendees.length} volunteer
-                  {event.attendees.length === 1 ? "" : "s"} signed up
-                </span>
-                {event.maxAttendees && (
-                  <span className={`block text-xs ${
-                    isDarkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
-                    Capacity {event.attendees.length} / {event.maxAttendees}
-                  </span>
-                )}
-              </div>
-            </div>
-            {event.maxAttendees && (
-              <div className="flex w-full flex-col gap-1 sm:w-52">
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      isPast
-                        ? "bg-gray-500"
-                        : isEventFull
-                        ? "bg-red-500"
-                        : event.attendees.length / event.maxAttendees > 0.8
-                        ? "bg-yellow-500"
-                        : "bg-green-500"
-                    }`}
-                    style={{
-                      width: `${Math.min(
-                        (event.attendees.length / event.maxAttendees) * 100,
-                        100
-                      )}%`,
-                    }}
-                  />
-                </div>
-                {!isPast && isEventFull && (
-                  <span className="text-xs font-semibold text-red-500">
-                    This event is full – check back for openings.
-                  </span>
-                )}
-              </div>
-            )}
+            <span className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              {formatDate(event.date)}
+            </span>
+            <span className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              {formatTime(event.fromTime)} – {formatTime(event.toTime)}
+            </span>
+            <span className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              {event.location}
+            </span>
           </div>
+
+          {!isPast && (
+            <div className="flex items-center gap-3">
+              <AddToCalendarButton
+                name={event.title}
+                description={event.description}
+                startDate={event.date}
+                startTime={event.fromTime}
+                endTime={event.toTime}
+                timeZone="America/Los_Angeles"
+                location={event.location}
+                options={["Apple", "Google", "iCal", "Microsoft365", "Outlook.com", "Yahoo"]}
+                buttonStyle="round"
+                size="3"
+                hideIconButton
+                hideTextLabelButton={false}
+                label="Add to Calendar"
+                trigger="click"
+                inline={false}
+                listStyle="modal"
+                iCalFileName={`sfbbo-${event.title
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`}
+              />
+            </div>
+          )}
 
           {event.attendees.length > 0 && (
             <div aria-label="Attendee list">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => setShowAttendees(!showAttendees)}
-                  className={`inline-flex items-center gap-2 text-sm font-semibold transition-colors ${
-                    isDarkMode
-                      ? "text-gray-200 hover:text-blue-300"
-                      : "text-gray-700 hover:text-blue-600"
-                  }`}
-                  aria-label={`${showAttendees ? "Hide" : "Show"} attendees list`}
-                >
-                  <span>Attendees ({event.attendees.length})</span>
-                  {showAttendees ? (
-                    <ChevronUp className="w-4 h-4" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4" />
-                  )}
-                </button>
-                {isAdmin && (
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      isDarkMode
-                        ? "bg-blue-500/20 text-blue-200"
-                        : "bg-blue-100 text-blue-700"
-                    }`}
-                    aria-label="Admin view"
-                  >
-                    Admin view
-                  </span>
+              <button
+                onClick={() => setShowAttendees(!showAttendees)}
+                className={`inline-flex items-center gap-2 text-sm font-medium transition-colors ${
+                  isDarkMode
+                    ? "text-gray-400 hover:text-gray-200"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+                aria-label={`${showAttendees ? "Hide" : "Show"} attendees list`}
+              >
+                <span>View {event.attendees.length} volunteer{event.attendees.length === 1 ? "" : "s"}</span>
+                {showAttendees ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
                 )}
-              </div>
+              </button>
               {showAttendees && (
                 <div className="mt-3 space-y-2">
-                  {event.attendees.map((attendee, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm transition-colors ${
-                        isDarkMode
-                          ? "border-gray-700 bg-gray-800/70 text-gray-100"
-                          : "border-gray-200 bg-white text-gray-700"
-                      }`}
-                      aria-label={`Attendee: ${attendee.name}${
-                        isAdmin ? `, Email: ${attendee.email}` : ""
-                      }`}
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium">{attendee.name}</span>
-                        {isAdmin && (
-                          <span
-                            className={`text-xs ${
-                              isDarkMode ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            {attendee.email || "No email provided"}
+                  {event.attendees.map((attendee, index) => {
+                    const shiftLabel = attendee.shiftPreference === "first-half" 
+                      ? "First Half" 
+                      : attendee.shiftPreference === "second-half" 
+                      ? "Second Half" 
+                      : "Full Shift";
+                    const shiftBadgeColor = attendee.shiftPreference === "full"
+                      ? isDarkMode ? "bg-green-500/20 text-green-300" : "bg-green-100 text-green-700"
+                      : isDarkMode ? "bg-blue-500/20 text-blue-300" : "bg-blue-100 text-blue-700";
+                    
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between px-3 py-2 text-sm ${
+                          isDarkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                        aria-label={`Attendee: ${attendee.name}, Shift: ${shiftLabel}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{attendee.name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${shiftBadgeColor}`}>
+                            {shiftLabel}
                           </span>
+                          {isAdmin && attendee.email && (
+                            <span className={`text-xs ${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
+                              ({attendee.email})
+                            </span>
+                          )}
+                        </div>
+                        {!isPast && isAdmin && (
+                          <button
+                            onClick={() =>
+                              removeAttendee(event.id, index, attendee.name)
+                            }
+                            className={`p-1 rounded transition-colors ${
+                              isDarkMode
+                                ? "text-gray-500 hover:text-red-400"
+                                : "text-gray-400 hover:text-red-600"
+                            }`}
+                            title={`Remove ${attendee.name}`}
+                            aria-label={`Remove ${attendee.name}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
-                      {!isPast && isAdmin && (
-                        <button
-                          onClick={() =>
-                            removeAttendee(event.id, index, attendee.name)
-                          }
-                          className={`rounded-full p-1 transition-colors ${
-                            isDarkMode
-                              ? "text-red-300 hover:bg-red-500/20"
-                              : "text-red-500 hover:bg-red-100"
-                          }`}
-                          title={`Remove ${attendee.name} from event`}
-                          aria-label={`Remove ${attendee.name} from event`}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1156,8 +974,9 @@ const EventApp = () => {
           )}
 
           {!isPast && !isEventFull && (
-            <div className="space-y-4" aria-label="Signup form">
-              <div className="rounded-2xl border p-4 sm:p-5">
+            <div className={`rounded-lg border p-4 ${
+              isDarkMode ? "border-gray-800 bg-gray-900/30" : "border-gray-300 bg-gray-50"
+            }`} aria-label="Signup form">
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                     <input
@@ -1185,6 +1004,65 @@ const EventApp = () => {
                       aria-label="Your email"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label
+                      className={`text-sm font-medium ${
+                        isDarkMode ? "text-gray-200" : "text-gray-700"
+                      }`}
+                    >
+                      Shift preference
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShiftPreference("first-half")}
+                        className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                          shiftPreference === "first-half"
+                            ? isDarkMode
+                              ? "bg-blue-500 text-white ring-2 ring-blue-400"
+                              : "bg-blue-600 text-white ring-2 ring-blue-500"
+                            : isDarkMode
+                            ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+                        }`}
+                        aria-label="Select first half shift"
+                      >
+                        First Half
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShiftPreference("second-half")}
+                        className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                          shiftPreference === "second-half"
+                            ? isDarkMode
+                              ? "bg-blue-500 text-white ring-2 ring-blue-400"
+                              : "bg-blue-600 text-white ring-2 ring-blue-500"
+                            : isDarkMode
+                            ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+                        }`}
+                        aria-label="Select second half shift"
+                      >
+                        Second Half
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShiftPreference("full")}
+                        className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                          shiftPreference === "full"
+                            ? isDarkMode
+                              ? "bg-blue-500 text-white ring-2 ring-blue-400"
+                              : "bg-blue-600 text-white ring-2 ring-blue-500"
+                            : isDarkMode
+                            ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+                        }`}
+                        aria-label="Select full shift"
+                      >
+                        Full Shift
+                      </button>
+                    </div>
+                  </div>
                   <button
                     onClick={handleSignUp}
                     disabled={!signupName.trim() || !signupEmail.trim() || signingUp}
@@ -1207,7 +1085,6 @@ const EventApp = () => {
                     information stays with SFBBO.
                   </p>
                 </div>
-              </div>
             </div>
           )}
         </div>
@@ -1223,93 +1100,67 @@ const EventApp = () => {
       role="main"
       aria-label="SFBBO Event Signup App"
     >
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
+      <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
         <header
-          className={`relative overflow-hidden rounded-3xl border px-6 sm:px-8 py-8 sm:py-10 ${
+          className={`border-b pb-6 ${
             isDarkMode
-              ? "border-gray-800 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950"
-              : "border-slate-200 bg-gradient-to-br from-white via-slate-50 to-white"
+              ? "border-gray-800"
+              : "border-gray-200"
           }`}
         >
-          <div
-            className="pointer-events-none absolute inset-0 opacity-70"
-            aria-hidden="true"
-          >
-            <div className="absolute -top-32 right-0 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
-            <div className="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl" />
-          </div>
-          <div className="relative z-10 space-y-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-6">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-center gap-4">
-                <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${
-                    isDarkMode
-                      ? "border-gray-700 bg-gray-900"
-                      : "border-blue-100 bg-blue-50"
-                  }`}
-                >
-                  <img
-                    src={sfbboLogo}
-                    alt="SFBBO Logo"
-                    className="h-10 w-10 object-contain"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <span
-                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold tracking-wide ${
-                      isDarkMode
-                        ? "bg-blue-500/20 text-blue-200"
-                        : "bg-blue-100 text-blue-700"
-                    }`}
-                  >
-                    <Sparkles className="h-4 w-4" /> SFBBO Volunteers
-                  </span>
+                <img
+                  src={sfbboLogo}
+                  alt="SFBBO Logo"
+                  className="h-12 w-12 object-contain"
+                />
+                <div className="space-y-1">
                   <h1
-                    className={`text-3xl font-bold leading-tight sm:text-4xl ${
-                      isDarkMode ? "text-white" : "text-slate-900"
+                    className={`text-2xl font-bold ${
+                      isDarkMode ? "text-white" : "text-gray-900"
                     }`}
                   >
-                    SFBBO Tabling & Outreach Event Hub
+                    SFBBO Event Signup
                   </h1>
                   <p
-                    className={`max-w-2xl text-sm sm:text-base ${
-                      isDarkMode ? "text-gray-300" : "text-slate-600"
+                    className={`text-sm ${
+                      isDarkMode ? "text-gray-400" : "text-gray-600"
                     }`}
                   >
-                    Discover upcoming volunteer opportunities, reserve your spot in seconds, and keep every
-                    commitment on your calendar. Administrators can curate events and track engagement effortlessly.
+                    Browse events, sign up, and manage your schedule
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={toggleDarkMode}
-                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
                     isDarkMode
-                      ? "border-gray-700 bg-gray-800 text-yellow-300 hover:bg-gray-700"
-                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                      ? "text-gray-400 hover:text-gray-200"
+                      : "text-gray-600 hover:text-gray-900"
                   }`}
                   aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
                   title={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
                 >
                   {isDarkMode ? (
-                    <Sun className="h-4 w-4" />
+                    <Sun className="h-5 w-5" />
                   ) : (
-                    <Moon className="h-4 w-4" />
+                    <Moon className="h-5 w-5" />
                   )}
-                  <span className="hidden sm:inline">Toggle theme</span>
                 </button>
                 {isAdmin ? (
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-green-500/20 px-3 py-1 text-sm font-semibold text-green-200">
-                      🔑 Admin
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+                      Admin
                     </span>
                     <button
                       onClick={handleAdminLogout}
-                      className={`text-sm font-medium underline-offset-4 transition-colors ${
+                      className={`text-sm transition-colors ${
                         isDarkMode
-                          ? "text-gray-300 hover:text-red-300"
-                          : "text-slate-600 hover:text-red-500"
+                          ? "text-gray-400 hover:text-gray-200"
+                          : "text-gray-600 hover:text-gray-900"
                       }`}
                     >
                       Logout
@@ -1318,13 +1169,13 @@ const EventApp = () => {
                 ) : (
                   <button
                     onClick={() => setShowAdminLogin(true)}
-                    className={`text-sm font-semibold underline-offset-4 transition-colors ${
+                    className={`text-sm transition-colors ${
                       isDarkMode
-                        ? "text-blue-200 hover:text-blue-100"
-                        : "text-blue-600 hover:text-blue-500"
+                        ? "text-gray-400 hover:text-gray-200"
+                        : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    Admin login
+                    Admin
                   </button>
                 )}
                 <button
@@ -1337,192 +1188,94 @@ const EventApp = () => {
                       }, 50);
                     }
                   }}
-                  className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                >
-                  <CalendarPlus className="h-4 w-4" />
-                  {showAddForm ? "Close form" : "Add an event"}
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <a
-                href="#upcoming"
-                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-wide transition ${
-                  isDarkMode
-                    ? "border-gray-700 bg-gray-900 text-gray-200 hover:border-blue-400 hover:text-blue-200"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-700"
-                }`}
-              >
-                Upcoming events
-                <ArrowRight className="h-4 w-4" />
-              </a>
-              <a
-                href="#how-it-works"
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition ${
-                  isDarkMode
-                    ? "bg-blue-500/20 text-blue-200 hover:bg-blue-500/30"
-                    : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                }`}
-              >
-                <HelpCircle className="h-4 w-4" />
-                How it works
-              </a>
-              {pastEvents.length > 0 && (
-                <a
-                  href="#archived"
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition ${
+                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
                     isDarkMode
-                      ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-blue-600 text-white hover:bg-blue-500"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
                   }`}
                 >
-                  <Archive className="h-4 w-4" />
-                  Archived events
-                </a>
-              )}
-              <a
-                href="#create-event"
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition ${
-                  isDarkMode
-                    ? "bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30"
-                    : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                }`}
-              >
-                <CalendarPlus className="h-4 w-4" />
-                Create event
-              </a>
-            </div>
-            <div
-              className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-sm sm:text-base ${
-                isDarkMode
-                  ? "border-gray-800 bg-gray-900/80 text-gray-200"
-                  : "border-blue-100 bg-blue-50 text-blue-800"
-              }`}
-            >
-              <Info className="h-5 w-5 flex-shrink-0" />
-              <p>
-                New here? Start below with a three-step overview. When you&apos;re ready, tap an event card to review
-                details, reserve your spot, and add it directly to your calendar.
-              </p>
+                  <CalendarPlus className="h-4 w-4" />
+                  {showAddForm ? "Close" : "Add Event"}
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
-        <section
-          aria-label="At-a-glance metrics"
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {statsHighlights.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={stat.label}
-                className={`rounded-3xl border p-5 sm:p-6 transition-all ${
-                  isDarkMode
-                    ? "border-gray-800 bg-gray-900/70 hover:border-blue-400/60 hover:shadow-blue-500/10"
-                    : "border-slate-200 bg-white hover:border-blue-300/60 hover:shadow-blue-200/40"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
-                      isDarkMode ? "bg-blue-500/10 text-blue-200" : "bg-blue-100 text-blue-600"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p
-                      className={`text-xs font-semibold uppercase tracking-wide ${
-                        isDarkMode ? "text-gray-400" : "text-slate-500"
-                      }`}
-                    >
-                      {stat.label}
-                    </p>
-                    <p
-                      className={`text-2xl font-bold ${
-                        isDarkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
+        {isAdmin && (
+          <section
+            aria-label="Statistics"
+            className={`rounded-lg border p-4 ${
+              isDarkMode ? "border-gray-800 bg-gray-900/50" : "border-gray-200 bg-white"
+            }`}
+          >
+            <div className="grid gap-6 sm:grid-cols-3">
+              {statsHighlights.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <div key={stat.label} className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-4 w-4 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`} />
+                      <p className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+                        {stat.label}
+                      </p>
+                    </div>
+                    <p className={`text-2xl font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
                       {stat.value}
                     </p>
-                    <p
-                      className={`text-xs ${
-                        isDarkMode ? "text-gray-500" : "text-slate-500"
-                      }`}
-                    >
-                      {stat.caption}
-                    </p>
+                    {stat.caption && (
+                      <p className={`text-xs ${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
+                        {stat.caption}
+                      </p>
+                    )}
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </section>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <section
           id="how-it-works"
-          className={`scroll-mt-32 rounded-3xl border px-6 py-8 sm:px-8 ${
-            isDarkMode ? "border-gray-800 bg-gray-900/60" : "border-slate-200 bg-white"
+          className={`rounded-lg border p-6 ${
+            isDarkMode ? "border-gray-800 bg-gray-900/50" : "border-gray-200 bg-gray-50"
           }`}
           aria-label="How the signup process works"
         >
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2
-                className={`text-2xl font-bold ${
-                  isDarkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                How it works
-              </h2>
-              <p
-                className={`text-sm ${
-                  isDarkMode ? "text-gray-400" : "text-slate-600"
-                }`}
-              >
-                Three simple steps keep volunteering easy for first-time participants and seasoned ambassadors alike.
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-5 md:grid-cols-3">
+          <h2
+            className={`text-lg font-semibold mb-4 ${
+              isDarkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            How it works
+          </h2>
+          <div className="grid gap-4 md:grid-cols-3">
             {onboardingSteps.map((step, index) => {
               const Icon = step.icon;
               return (
                 <div
                   key={step.title}
-                  className={`relative overflow-hidden rounded-3xl border p-5 lg:p-6 ${
-                    isDarkMode
-                      ? "border-gray-800 bg-gray-900/60"
-                      : "border-slate-200 bg-slate-50"
-                  }`}
+                  className="flex gap-3"
                 >
-                  <div className="absolute right-3 top-3 text-4xl font-semibold text-gray-300/30">
-                    {index + 1}
-                  </div>
-                  <div
-                    className={`mb-4 inline-flex items-center justify-center rounded-2xl p-3 ${
-                      isDarkMode
-                        ? "bg-blue-500/20 text-blue-200"
-                        : "bg-blue-100 text-blue-600"
-                    }`}
-                  >
+                  <div className={`flex-shrink-0 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
                     <Icon className="h-5 w-5" />
                   </div>
-                  <h3
-                    className={`mb-2 text-lg font-semibold ${
-                      isDarkMode ? "text-white" : "text-slate-900"
-                    }`}
-                  >
-                    {step.title}
-                  </h3>
-                  <p
-                    className={`text-sm leading-relaxed ${
-                      isDarkMode ? "text-gray-400" : "text-slate-600"
-                    }`}
-                  >
-                    {step.description}
-                  </p>
+                  <div className="space-y-1">
+                    <h3
+                      className={`text-sm font-medium ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {step.title}
+                    </h3>
+                    <p
+                      className={`text-sm ${
+                        isDarkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      {step.description}
+                    </p>
+                  </div>
                 </div>
               );
             })}
