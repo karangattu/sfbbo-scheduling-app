@@ -77,8 +77,9 @@ const EventApp = () => {
   const [showMetricsModal, setShowMetricsModal] = useState(false);
   const [metricsEventId, setMetricsEventId] = useState(null);
   const [metricsData, setMetricsData] = useState({
-    adultAttendees: "",
-    childAttendees: "",
+    adultsConnected: "",
+    kidsConnected: "",
+    sfbboVolunteers: "",
     newsletterSignups: "",
     notes: "",
   });
@@ -576,8 +577,9 @@ const EventApp = () => {
   const openMetricsModal = (event) => {
     setMetricsEventId(event.id);
     setMetricsData({
-      adultAttendees: event.postEventMetrics?.adultAttendees || "",
-      childAttendees: event.postEventMetrics?.childAttendees || "",
+      adultsConnected: event.postEventMetrics?.adultsConnected || "",
+      kidsConnected: event.postEventMetrics?.kidsConnected || "",
+      sfbboVolunteers: event.postEventMetrics?.sfbboVolunteers || "",
       newsletterSignups: event.postEventMetrics?.newsletterSignups || "",
       notes: event.postEventMetrics?.notes || "",
     });
@@ -588,8 +590,9 @@ const EventApp = () => {
     setShowMetricsModal(false);
     setMetricsEventId(null);
     setMetricsData({
-      adultAttendees: "",
-      childAttendees: "",
+      adultsConnected: "",
+      kidsConnected: "",
+      sfbboVolunteers: "",
       newsletterSignups: "",
       notes: "",
     });
@@ -599,8 +602,9 @@ const EventApp = () => {
     if (!metricsEventId) return;
 
     const metrics = {
-      adultAttendees: parseInt(metricsData.adultAttendees) || 0,
-      childAttendees: parseInt(metricsData.childAttendees) || 0,
+      adultsConnected: parseInt(metricsData.adultsConnected) || 0,
+      kidsConnected: parseInt(metricsData.kidsConnected) || 0,
+      sfbboVolunteers: parseInt(metricsData.sfbboVolunteers) || 0,
       newsletterSignups: parseInt(metricsData.newsletterSignups) || 0,
       notes: metricsData.notes.trim(),
     };
@@ -906,7 +910,7 @@ const EventApp = () => {
                     Post-Event Metrics
                   </h4>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div className={`text-center rounded-xl px-3 py-2 ${
                     isDarkMode ? "bg-green-900/30" : "bg-white"
                   }`}>
@@ -914,12 +918,12 @@ const EventApp = () => {
                       <UserCheck className="w-4 h-4" />
                       <span className={`text-xs font-medium ${
                         isDarkMode ? "text-green-200" : "text-green-700"
-                      }`}>Adults</span>
+                      }`}>Adults Connected</span>
                     </div>
                     <div className={`text-lg font-bold ${
                       isDarkMode ? "text-green-100" : "text-green-800"
                     }`}>
-                      {event.postEventMetrics.adultAttendees}
+                      {event.postEventMetrics.adultsConnected}
                     </div>
                   </div>
                   <div className={`text-center rounded-xl px-3 py-2 ${
@@ -929,12 +933,27 @@ const EventApp = () => {
                       <Baby className="w-4 h-4" />
                       <span className={`text-xs font-medium ${
                         isDarkMode ? "text-green-200" : "text-green-700"
-                      }`}>Kids</span>
+                      }`}>Kids Connected</span>
                     </div>
                     <div className={`text-lg font-bold ${
                       isDarkMode ? "text-green-100" : "text-green-800"
                     }`}>
-                      {event.postEventMetrics.childAttendees}
+                      {event.postEventMetrics.kidsConnected}
+                    </div>
+                  </div>
+                  <div className={`text-center rounded-xl px-3 py-2 ${
+                    isDarkMode ? "bg-green-900/30" : "bg-white"
+                  }`}>
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Users className="w-4 h-4" />
+                      <span className={`text-xs font-medium ${
+                        isDarkMode ? "text-green-200" : "text-green-700"
+                      }`}>SFBBO Volunteers</span>
+                    </div>
+                    <div className={`text-lg font-bold ${
+                      isDarkMode ? "text-green-100" : "text-green-800"
+                    }`}>
+                      {event.postEventMetrics.sfbboVolunteers}
                     </div>
                   </div>
                   <div className={`text-center rounded-xl px-3 py-2 ${
@@ -944,7 +963,7 @@ const EventApp = () => {
                       <Mail className="w-4 h-4" />
                       <span className={`text-xs font-medium ${
                         isDarkMode ? "text-green-200" : "text-green-700"
-                      }`}>Newsletter</span>
+                      }`}>Newsletter Signups</span>
                     </div>
                     <div className={`text-lg font-bold ${
                       isDarkMode ? "text-green-100" : "text-green-800"
@@ -2095,16 +2114,16 @@ const EventApp = () => {
                       isDarkMode ? "text-gray-300" : "text-slate-700"
                     }`}
                   >
-                    Adult Attendees
+                    Adults Connected
                   </label>
                   <input
                     type="number"
                     min="0"
-                    value={metricsData.adultAttendees}
+                    value={metricsData.adultsConnected}
                     onChange={(e) =>
                       setMetricsData({
                         ...metricsData,
-                        adultAttendees: e.target.value,
+                        adultsConnected: e.target.value,
                       })
                     }
                     className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
@@ -2121,16 +2140,16 @@ const EventApp = () => {
                       isDarkMode ? "text-gray-300" : "text-slate-700"
                     }`}
                   >
-                    Child Attendees
+                    Kids Connected
                   </label>
                   <input
                     type="number"
                     min="0"
-                    value={metricsData.childAttendees}
+                    value={metricsData.kidsConnected}
                     onChange={(e) =>
                       setMetricsData({
                         ...metricsData,
-                        childAttendees: e.target.value,
+                        kidsConnected: e.target.value,
                       })
                     }
                     className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
@@ -2141,6 +2160,32 @@ const EventApp = () => {
                     placeholder="0"
                   />
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <label
+                  className={`text-sm font-medium ${
+                    isDarkMode ? "text-gray-300" : "text-slate-700"
+                  }`}
+                >
+                  SFBBO Volunteers
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={metricsData.sfbboVolunteers}
+                  onChange={(e) =>
+                    setMetricsData({
+                      ...metricsData,
+                      sfbboVolunteers: e.target.value,
+                    })
+                  }
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                    isDarkMode
+                      ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                      : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
+                  }`}
+                  placeholder="0"
+                />
               </div>
               <div className="space-y-1.5">
                 <label
