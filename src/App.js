@@ -18,6 +18,7 @@ import {
   Baby,
   Mail,
   Edit,
+  Share2,
 } from "lucide-react";
 import { AddToCalendarButton } from "add-to-calendar-button-react";
 import { firebaseOperations } from "./firebase";
@@ -83,6 +84,7 @@ const EventApp = () => {
     newsletterSignups: "",
     notes: "",
   });
+  const [highlightedEventId, setHighlightedEventId] = useState(null);
 
   // Load initial data from Firebase with real-time updates
   useEffect(() => {
@@ -101,6 +103,25 @@ const EventApp = () => {
       unsubscribeEvents();
     };
   }, []);
+
+  // Handle URL hash for direct event links
+  useEffect(() => {
+    if (events.length === 0) return;
+
+    const hash = window.location.hash;
+    if (hash.startsWith('#event-')) {
+      const eventId = hash.substring(7); // Remove '#event-' prefix
+      const eventElement = document.getElementById(`event-${eventId}`);
+      if (eventElement) {
+        setTimeout(() => {
+          eventElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setHighlightedEventId(eventId);
+          // Remove highlight after 3 seconds
+          setTimeout(() => setHighlightedEventId(null), 3000);
+        }, 500);
+      }
+    }
+  }, [events]);
 
   // Helper function to create a local date from YYYY-MM-DD
   function getLocalDateFromString(dateString) {
@@ -632,6 +653,7 @@ const EventApp = () => {
     const categoryInfo =
       eventCategories.find((cat) => cat.value === event.category) ||
       eventCategories[0];
+    const isHighlighted = highlightedEventId === event.id;
 
     const handleSignUp = async () => {
       if (!signupName.trim() || !signupEmail.trim()) return;
@@ -644,9 +666,23 @@ const EventApp = () => {
       setSigningUp(false);
     };
 
+    const copyEventLink = () => {
+      const eventUrl = `${window.location.origin}${window.location.pathname}#event-${event.id}`;
+      navigator.clipboard.writeText(eventUrl).then(() => {
+        showToast("Event link copied to clipboard!");
+      }).catch(() => {
+        showToast("Failed to copy link");
+      });
+    };
+
     return (
       <article
-        className={`rounded-lg border transition-colors ${
+        id={`event-${event.id}`}
+        className={`rounded-lg border transition-all ${
+          isHighlighted
+            ? "ring-4 ring-blue-500 ring-opacity-50"
+            : ""
+        } ${
           isDarkMode
             ? isPast
               ? "bg-gray-900/30 border-gray-800"
@@ -719,6 +755,18 @@ const EventApp = () => {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                onClick={copyEventLink}
+                className={`p-2 rounded transition-colors ${
+                  isDarkMode
+                    ? "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                }`}
+                aria-label="Share event link"
+                title="Copy event link"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
               {isAdmin && (
                 <div className="flex items-center gap-1">
                   {isPast && (
