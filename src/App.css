@@ -36,3 +36,40 @@
     transform: rotate(360deg);
   }
 }
+
+/* Add to Calendar Button Styling */
+.atcb-button {
+  background-color: #1e293b !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 0.75rem !important;
+  padding: 0.625rem 1rem !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  cursor: pointer !important;
+}
+
+.atcb-button:hover {
+  background-color: #0f172a !important;
+  box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+.atcb-button:active {
+  transform: scale(0.98) !important;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .atcb-button {
+  background-color: #334155 !important;
+}
+
+[data-theme="dark"] .atcb-button:hover {
+  background-color: #475569 !important;
+}
+
+

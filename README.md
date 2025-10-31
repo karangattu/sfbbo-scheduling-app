@@ -1,64 +1,73 @@
-# SFBBO Scheduling App
+# SFBBO Event Signup App
 
-A React-based event scheduling and signup application for the San Francisco Bay Bird Observatory (SFBBO). This application allows volunteers to view, sign up for, and manage bird observatory events and activities.
+A professional event scheduling and signup application for SFBBO (San Francisco Bay Area Breastfeeding & Birth Options) volunteer management and event coordination.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 16+
+- npm or yarn
 
 ### Installation
 
-1. Clone the repository:
+```bash
+npm install
+```
 
-   ```bash
-   git clone https://github.com/karangattu/sfbbo-scheduling-app.git
-   cd sfbbo-scheduling-app
-   ```
+### Development
 
-2. Install dependencies:
+```bash
+npm run start
+```
 
-   ```bash
-   npm install
-   ```
+Runs the app in development mode at [http://localhost:3000](http://localhost:3000)
 
-3. Set up Firebase configuration:
-   - Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-   - Add your Firebase config to `src/firebase.js`
+### Build for Production
 
-4. Start the development server:
+```bash
+npm run build
+```
 
-   ```bash
-   npm start
-   ```
+Creates an optimized production build in the `build/` folder.
 
-The app will open at [http://localhost:3000](http://localhost:3000).
+### Deploy to Firebase
+
+```bash
+firebase deploy
+```
+
+## Project Structure
+
+```bash
+src/
+├── App.js              # Main application component
+├── App.css             # App-specific styles
+├── index.js            # React entry point
+├── index.css           # Global styles & Tailwind
+└── firebase.js         # Firebase configuration & operations
+
+public/
+├── index.html          # HTML entry point
+└── manifest.json       # PWA manifest
+
+build/                  # Production build (generated)
+```
 
 ## Available Scripts
 
-### `npm start`
+- `npm start` - Run development server
+- `npm run build` - Create production build
 
-Runs the app in development mode. The page will reload when you make changes.
+## Environment Variables
 
-### `npm test`
+Create a `.env` file with your Firebase configuration:
 
-Launches the test runner in interactive watch mode.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder with optimized performance.
-
-### `npm run deploy`
-
-Builds and deploys the app to Firebase Hosting.
-
-### `npm run deploy:hosting`
-
-Deploys only the hosting component to Firebase.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Deployment
-
-This app is configured for deployment on Firebase Hosting. Use `npm run deploy` to build and deploy the application.
+```bash
+REACT_APP_FIREBASE_API_KEY=your_key_here
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_domain_here
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id_here
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_bucket_here
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id_here
+REACT_APP_FIREBASE_APP_ID=your_app_id_here
+```

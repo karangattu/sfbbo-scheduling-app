@@ -291,6 +291,21 @@ const EventApp = () => {
     });
   };
 
+  // Helper function to calculate days away
+  const getDaysAway = (dateString) => {
+    const eventDate = getLocalDateFromString(dateString);
+    if (!eventDate) return null;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    eventDate.setHours(0, 0, 0, 0);
+    
+    const timeDifference = eventDate.getTime() - today.getTime();
+    const daysAway = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+    
+    return daysAway;
+  };
+
   // Helper function to format time
   const formatTime = (timeString) => {
     const [hours, minutes] = timeString.split(":");
@@ -301,13 +316,6 @@ const EventApp = () => {
       minute: "2-digit",
       hour12: true,
     });
-  };
-
-  // Helper function to format date and time for calendar
-  const formatDateTimeForCalendar = (dateString, timeString) => {
-    const [year, month, day] = dateString.split("-");
-    const [hours, minutes] = timeString.split(":");
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
   // Categorize and sort events
@@ -335,7 +343,7 @@ const EventApp = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const categorized = useMemo(() => categorizedEvents(), [events, categorizedEvents]);
+  const categorized = useMemo(() => categorizedEvents(), [categorizedEvents]);
   const upcomingEvents = categorized.upcoming;
   const pastEvents = categorized.past;
 
@@ -678,7 +686,7 @@ const EventApp = () => {
     return (
       <article
         id={`event-${event.id}`}
-        className={`rounded-lg border transition-all ${
+        className={`rounded-lg border transition-all event-card-hover animate-fade-in ${
           isHighlighted
             ? "ring-4 ring-blue-500 ring-opacity-50"
             : ""
@@ -714,7 +722,7 @@ const EventApp = () => {
                   {event.title}
                 </h3>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded ${
+                  className={`text-xs px-2 py-0.5 rounded animate-scale-in ${
                     isDarkMode
                       ? "bg-gray-800 text-gray-400"
                       : "bg-gray-100 text-gray-600"
@@ -725,7 +733,7 @@ const EventApp = () => {
                 </span>
                 {isPast && (
                   <span
-                    className={`text-xs px-2 py-0.5 rounded ${
+                    className={`text-xs px-2 py-0.5 rounded animate-scale-in ${
                       isDarkMode
                         ? "bg-gray-800 text-gray-400"
                         : "bg-gray-100 text-gray-600"
@@ -829,9 +837,22 @@ const EventApp = () => {
             role="list"
             aria-label="Event details"
           >
-            <span className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              {formatDate(event.date)}
+            <span className="flex flex-col items-start gap-0.5">
+              <span className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                {formatDate(event.date)}
+              </span>
+              {!isPast && (
+                <span className={`ml-6 text-xs font-medium ${
+                  getDaysAway(event.date) === 0 ? "text-orange-500" :
+                  getDaysAway(event.date) === 1 ? "text-amber-500" :
+                  isDarkMode ? "text-slate-500" : "text-slate-500"
+                }`}>
+                  {getDaysAway(event.date) === 0 ? "Today" :
+                   getDaysAway(event.date) === 1 ? "Tomorrow" :
+                   `In ${getDaysAway(event.date)} days`}
+                </span>
+              )}
             </span>
             <span className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
@@ -845,27 +866,29 @@ const EventApp = () => {
 
           {!isPast && (
             <div className="flex items-center gap-3">
-              <AddToCalendarButton
-                name={event.title}
-                description={event.description}
-                startDate={event.date}
-                startTime={event.fromTime}
-                endTime={event.toTime}
-                timeZone="America/Los_Angeles"
-                location={event.location}
-                options={["Apple", "Google", "iCal", "Microsoft365", "Outlook.com", "Yahoo"]}
-                buttonStyle="round"
-                size="3"
-                hideIconButton
-                hideTextLabelButton={false}
-                label="Add to Calendar"
-                trigger="click"
-                inline={false}
-                listStyle="modal"
-                iCalFileName={`sfbbo-${event.title
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`}
-              />
+              <div>
+                <AddToCalendarButton
+                  name={event.title}
+                  description={event.description}
+                  startDate={event.date}
+                  startTime={event.fromTime}
+                  endTime={event.toTime}
+                  timeZone="America/Los_Angeles"
+                  location={event.location}
+                  options={["Apple", "Google", "iCal", "Microsoft365", "Outlook.com", "Yahoo"]}
+                  buttonStyle="flat"
+                  size="3"
+                  hideIconButton={false}
+                  hideTextLabelButton={false}
+                  label="Add to Calendar"
+                  trigger="click"
+                  inline={false}
+                  listStyle="modal"
+                  iCalFileName={`sfbbo-${event.title
+                    .toLowerCase()
+                    .replace(/\s+/g, "-")}`}
+                />
+              </div>
             </div>
           )}
 
@@ -888,7 +911,7 @@ const EventApp = () => {
                 )}
               </button>
               {showAttendees && (
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 space-y-2 animate-slide-down">
                   {event.attendees.map((attendee, index) => {
                     const shiftLabel = attendee.shiftPreference === "first-half" 
                       ? "First Half" 
@@ -909,7 +932,7 @@ const EventApp = () => {
                       >
                         <div className="flex items-center gap-2">
                           <span>{attendee.name}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${shiftBadgeColor}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded animate-scale-in ${shiftBadgeColor}`}>
                             {shiftLabel}
                           </span>
                           {isAdmin && attendee.email && (
@@ -1041,7 +1064,7 @@ const EventApp = () => {
           )}
 
           {!isPast && !isEventFull && (
-            <div className={`rounded-lg border p-4 ${
+            <div className={`rounded-lg border p-4 animate-slide-down ${
               isDarkMode ? "border-gray-800 bg-gray-900/30" : "border-gray-300 bg-gray-50"
             }`} aria-label="Signup form">
                 <div className="flex flex-col gap-3">
@@ -1051,7 +1074,7 @@ const EventApp = () => {
                       placeholder="Your full name"
                       value={signupName}
                       onChange={(e) => setSignupName(e.target.value)}
-                      className={`flex-1 rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                      className={`flex-1 rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                         isDarkMode
                           ? "border-gray-600 bg-gray-800/80 text-white placeholder-gray-400"
                           : "border-gray-300 bg-white text-gray-900 placeholder-gray-500"
@@ -1063,7 +1086,7 @@ const EventApp = () => {
                       placeholder="name@email.com"
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      className={`flex-1 rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                      className={`flex-1 rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                         isDarkMode
                           ? "border-gray-600 bg-gray-800/80 text-white placeholder-gray-400"
                           : "border-gray-300 bg-white text-gray-900 placeholder-gray-500"
@@ -1086,8 +1109,8 @@ const EventApp = () => {
                         className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                           shiftPreference === "first-half"
                             ? isDarkMode
-                              ? "bg-blue-500 text-white ring-2 ring-blue-400"
-                              : "bg-blue-600 text-white ring-2 ring-blue-500"
+                              ? "bg-slate-700 text-white ring-2 ring-slate-600"
+                              : "bg-slate-800 text-white ring-2 ring-slate-700"
                             : isDarkMode
                             ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
@@ -1102,8 +1125,8 @@ const EventApp = () => {
                         className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                           shiftPreference === "second-half"
                             ? isDarkMode
-                              ? "bg-blue-500 text-white ring-2 ring-blue-400"
-                              : "bg-blue-600 text-white ring-2 ring-blue-500"
+                              ? "bg-slate-700 text-white ring-2 ring-slate-600"
+                              : "bg-slate-800 text-white ring-2 ring-slate-700"
                             : isDarkMode
                             ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
@@ -1118,8 +1141,8 @@ const EventApp = () => {
                         className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                           shiftPreference === "full"
                             ? isDarkMode
-                              ? "bg-blue-500 text-white ring-2 ring-blue-400"
-                              : "bg-blue-600 text-white ring-2 ring-blue-500"
+                              ? "bg-slate-700 text-white ring-2 ring-slate-600"
+                              : "bg-slate-800 text-white ring-2 ring-slate-700"
                             : isDarkMode
                             ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
@@ -1133,11 +1156,11 @@ const EventApp = () => {
                   <button
                     onClick={handleSignUp}
                     disabled={!signupName.trim() || !signupEmail.trim() || signingUp}
-                    className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all shadow-md hover:shadow-lg ${
                       isDarkMode
-                        ? "bg-blue-500 text-white hover:bg-blue-400 disabled:bg-gray-600"
-                        : "bg-blue-600 text-white hover:bg-blue-500 disabled:bg-gray-300"
-                    } disabled:cursor-not-allowed`}
+                        ? "bg-slate-700 text-white hover:bg-slate-600 disabled:bg-gray-600"
+                        : "bg-slate-800 text-white hover:bg-slate-900 disabled:bg-gray-300"
+                    } disabled:cursor-not-allowed disabled:shadow-none`}
                     aria-label="Sign up for event"
                   >
                     {signingUp && <Loader className="w-4 h-4 animate-spin" />}
@@ -1162,7 +1185,9 @@ const EventApp = () => {
   return (
     <div
       className={`min-h-screen transition-colors duration-200 ${
-        isDarkMode ? "bg-gray-950" : "bg-slate-50"
+        isDarkMode
+          ? "bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950"
+          : "bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50"
       }`}
       role="main"
       aria-label="SFBBO Event Signup App"
@@ -1255,10 +1280,10 @@ const EventApp = () => {
                       }, 50);
                     }
                   }}
-                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition shadow-sm hover:shadow-md ${
                     isDarkMode
-                      ? "bg-blue-600 text-white hover:bg-blue-500"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
+                      ? "bg-slate-700 text-white hover:bg-slate-600"
+                      : "bg-slate-800 text-white hover:bg-slate-900"
                   }`}
                 >
                   <CalendarPlus className="h-4 w-4" />
@@ -1399,7 +1424,7 @@ const EventApp = () => {
                   placeholder="Enter event title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                     formErrors.title
                       ? "border-red-500 focus:ring-red-400"
                       : isDarkMode
@@ -1423,7 +1448,7 @@ const EventApp = () => {
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white"
                       : "border-slate-200 bg-white text-slate-900"
@@ -1452,7 +1477,7 @@ const EventApp = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, creatorName: e.target.value })
                   }
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                     formErrors.creatorName
                       ? "border-red-500 focus:ring-red-400"
                       : isDarkMode
@@ -1479,7 +1504,7 @@ const EventApp = () => {
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                     formErrors.date
                       ? "border-red-500 focus:ring-red-400"
                       : isDarkMode
@@ -1507,7 +1532,7 @@ const EventApp = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, location: e.target.value })
                   }
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                     formErrors.location
                       ? "border-red-500 focus:ring-red-400"
                       : isDarkMode
@@ -1536,7 +1561,7 @@ const EventApp = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, fromTime: e.target.value })
                   }
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                     formErrors.fromTime
                       ? "border-red-500 focus:ring-red-400"
                       : isDarkMode
@@ -1570,7 +1595,7 @@ const EventApp = () => {
                   type="time"
                   value={formData.toTime}
                   onChange={(e) => setFormData({ ...formData, toTime: e.target.value })}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                     formErrors.toTime
                       ? "border-red-500 focus:ring-red-400"
                       : isDarkMode
@@ -1607,7 +1632,7 @@ const EventApp = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, maxAttendees: e.target.value })
                   }
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -1629,7 +1654,7 @@ const EventApp = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className={`h-28 w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`h-28 w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 input-focus-glow ${
                     formErrors.description
                       ? "border-red-500 focus:ring-red-400"
                       : isDarkMode
@@ -1649,11 +1674,11 @@ const EventApp = () => {
                   type="button"
                   onClick={addEvent}
                   disabled={submitting}
-                  className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors ${
+                  className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors shadow-md hover:shadow-lg ${
                     isDarkMode
-                      ? "bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600"
-                      : "bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-300"
-                  } disabled:cursor-not-allowed`}
+                      ? "bg-emerald-700 text-white hover:bg-emerald-600 disabled:bg-gray-600"
+                      : "bg-emerald-700 text-white hover:bg-emerald-600 disabled:bg-gray-300"
+                  } disabled:cursor-not-allowed disabled:shadow-none`}
                 >
                   {submitting && <Loader className="h-4 w-4 animate-spin" />}
                   {submitting ? "Creating..." : "Create event"}
@@ -1661,7 +1686,7 @@ const EventApp = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors ${
+                  className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors shadow-sm hover:shadow-md ${
                     isDarkMode
                       ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -1709,27 +1734,64 @@ const EventApp = () => {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center rounded-3xl border border-dashed border-blue-300/60 px-6 py-10 text-blue-500">
-              <Loader className="h-6 w-6 animate-spin" />
-              <span className="ml-3 text-sm font-medium">Loading events...</span>
+            <div className="space-y-6">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={`rounded-lg border p-5 ${
+                    isDarkMode ? "border-gray-800 bg-gray-900/50" : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-3 flex-1">
+                        <div className={`h-6 w-3/4 rounded animate-pulse ${
+                          isDarkMode ? "bg-gray-800" : "bg-gray-200"
+                        }`}></div>
+                        <div className={`h-4 w-1/2 rounded animate-pulse ${
+                          isDarkMode ? "bg-gray-800" : "bg-gray-200"
+                        }`}></div>
+                      </div>
+                    </div>
+                    <div className={`h-16 w-full rounded animate-pulse ${
+                      isDarkMode ? "bg-gray-800" : "bg-gray-200"
+                    }`}></div>
+                    <div className="flex gap-4">
+                      <div className={`h-4 w-32 rounded animate-pulse ${
+                        isDarkMode ? "bg-gray-800" : "bg-gray-200"
+                      }`}></div>
+                      <div className={`h-4 w-32 rounded animate-pulse ${
+                        isDarkMode ? "bg-gray-800" : "bg-gray-200"
+                      }`}></div>
+                      <div className={`h-4 w-32 rounded animate-pulse ${
+                        isDarkMode ? "bg-gray-800" : "bg-gray-200"
+                      }`}></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : upcomingEvents.length === 0 ? (
             <div
-              className={`rounded-3xl border px-6 py-10 text-center ${
+              className={`rounded-3xl border px-6 py-16 text-center animate-fade-in ${
                 isDarkMode
-                  ? "border-gray-800 bg-gray-900/60 text-gray-300"
-                  : "border-slate-200 bg-white text-slate-600"
+                  ? "border-gray-800 bg-gradient-to-br from-gray-900/80 to-gray-900/40 text-gray-300"
+                  : "border-slate-200 bg-gradient-to-br from-white to-slate-50 text-slate-600"
               }`}
             >
-              <Calendar className="mx-auto mb-4 h-12 w-12 text-blue-400" />
+              <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 ${
+                isDarkMode ? "bg-blue-500/20" : "bg-blue-100"
+              }`}>
+                <Calendar className={`h-10 w-10 ${isDarkMode ? "text-blue-400" : "text-blue-500"}`} />
+              </div>
               <h3
-                className={`text-xl font-semibold ${
+                className={`text-2xl font-bold mb-3 ${
                   isDarkMode ? "text-white" : "text-slate-900"
                 }`}
               >
                 No events yet
               </h3>
-              <p className="mt-2 text-sm">
+              <p className="text-base max-w-md mx-auto">
                 Hang tight—new SFBBO opportunities will appear here soon. Admins can create the first listing with the
                 button above.
               </p>
@@ -1779,9 +1841,9 @@ const EventApp = () => {
       </div>
 
       {showAdminLogin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md px-4 animate-fade-in">
           <div
-            className={`w-full max-w-md rounded-3xl border px-6 py-8 shadow-2xl ${
+            className={`w-full max-w-md rounded-3xl border px-6 py-8 shadow-2xl animate-scale-in ${
               isDarkMode ? "border-gray-800 bg-gray-900" : "border-slate-200 bg-white"
             }`}
           >
@@ -1819,7 +1881,7 @@ const EventApp = () => {
                       username: e.target.value,
                     })
                   }
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -1844,7 +1906,7 @@ const EventApp = () => {
                       password: e.target.value,
                     })
                   }
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -1856,7 +1918,7 @@ const EventApp = () => {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={handleAdminLogin}
-                  className="inline-flex flex-1 items-center justify-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                  className="inline-flex flex-1 items-center justify-center rounded-full bg-slate-800 px-5 py-3 text-sm font-semibold text-white transition shadow-md hover:bg-slate-900 hover:shadow-lg"
                 >
                   Login
                 </button>
@@ -1865,7 +1927,7 @@ const EventApp = () => {
                     setShowAdminLogin(false);
                     setAdminCredentials({ username: "", password: "" });
                   }}
-                  className={`inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
+                  className={`inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition shadow-sm hover:shadow-md ${
                     isDarkMode
                       ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -1880,9 +1942,9 @@ const EventApp = () => {
       )}
 
       {showEditModal && editFormData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md px-4 animate-fade-in">
           <div
-            className={`w-full max-w-2xl rounded-3xl border px-6 py-8 shadow-2xl ${
+            className={`w-full max-w-2xl rounded-3xl border px-6 py-8 shadow-2xl animate-scale-in ${
               isDarkMode ? "border-gray-800 bg-gray-900" : "border-slate-200 bg-white"
             }`}
             role="dialog"
@@ -1931,7 +1993,7 @@ const EventApp = () => {
                   type="text"
                   value={editFormData.title}
                   onChange={(e) => handleEditChange("title", e.target.value)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -1950,7 +2012,7 @@ const EventApp = () => {
                 <select
                   value={editFormData.category}
                   onChange={(e) => handleEditChange("category", e.target.value)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white"
                       : "border-slate-200 bg-white text-slate-900"
@@ -1976,7 +2038,7 @@ const EventApp = () => {
                   type="text"
                   value={editFormData.creatorName}
                   onChange={(e) => handleEditChange("creatorName", e.target.value)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -1996,7 +2058,7 @@ const EventApp = () => {
                   type="date"
                   value={editFormData.date}
                   onChange={(e) => handleEditChange("date", e.target.value)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white"
                       : "border-slate-200 bg-white text-slate-900"
@@ -2016,7 +2078,7 @@ const EventApp = () => {
                   type="text"
                   value={editFormData.location}
                   onChange={(e) => handleEditChange("location", e.target.value)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -2036,7 +2098,7 @@ const EventApp = () => {
                   type="time"
                   value={editFormData.fromTime}
                   onChange={(e) => handleEditChange("fromTime", e.target.value)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white"
                       : "border-slate-200 bg-white text-slate-900"
@@ -2056,7 +2118,7 @@ const EventApp = () => {
                   type="time"
                   value={editFormData.toTime}
                   onChange={(e) => handleEditChange("toTime", e.target.value)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white"
                       : "border-slate-200 bg-white text-slate-900"
@@ -2076,7 +2138,7 @@ const EventApp = () => {
                   type="number"
                   value={editFormData.maxAttendees}
                   onChange={(e) => handleEditChange("maxAttendees", e.target.value)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -2095,7 +2157,7 @@ const EventApp = () => {
                 <textarea
                   value={editFormData.description}
                   onChange={(e) => handleEditChange("description", e.target.value)}
-                  className={`h-28 w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`h-28 w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -2107,14 +2169,14 @@ const EventApp = () => {
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
                 onClick={saveEditedEvent}
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-slate-800 px-5 py-3 text-sm font-semibold text-white transition shadow-md hover:bg-slate-900 hover:shadow-lg"
                 aria-label="Save changes"
               >
                 Save changes
               </button>
               <button
                 onClick={closeEditModal}
-                className={`inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
+                className={`inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition shadow-sm hover:shadow-md ${
                   isDarkMode
                     ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -2129,9 +2191,9 @@ const EventApp = () => {
       )}
 
       {showMetricsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md px-4 animate-fade-in">
           <div
-            className={`w-full max-w-md rounded-3xl border px-6 py-8 shadow-2xl ${
+            className={`w-full max-w-md rounded-3xl border px-6 py-8 shadow-2xl animate-scale-in ${
               isDarkMode ? "border-gray-800 bg-gray-900" : "border-slate-200 bg-white"
             }`}
             role="dialog"
@@ -2174,7 +2236,7 @@ const EventApp = () => {
                         adultsConnected: e.target.value,
                       })
                     }
-                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                       isDarkMode
                         ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                         : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -2200,7 +2262,7 @@ const EventApp = () => {
                         kidsConnected: e.target.value,
                       })
                     }
-                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                       isDarkMode
                         ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                         : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -2227,7 +2289,7 @@ const EventApp = () => {
                       sfbboVolunteers: e.target.value,
                     })
                   }
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -2253,7 +2315,7 @@ const EventApp = () => {
                       newsletterSignups: e.target.value,
                     })
                   }
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -2277,7 +2339,7 @@ const EventApp = () => {
                       notes: e.target.value,
                     })
                   }
-                  className={`h-20 w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`h-20 w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
                     isDarkMode
                       ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
                       : "border-slate-200 bg-white text-slate-900 placeholder-slate-400"
@@ -2288,13 +2350,13 @@ const EventApp = () => {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={saveEventMetrics}
-                  className="inline-flex flex-1 items-center justify-center rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-500"
+                  className="inline-flex flex-1 items-center justify-center rounded-full bg-slate-800 px-5 py-3 text-sm font-semibold text-white transition shadow-md hover:bg-slate-900 hover:shadow-lg"
                 >
                   Save Metrics
                 </button>
                 <button
                   onClick={closeMetricsModal}
-                  className={`inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
+                  className={`inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition shadow-sm hover:shadow-md ${
                     isDarkMode
                       ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
