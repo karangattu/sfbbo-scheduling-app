@@ -1,6 +1,6 @@
 # SFBBO Event Signup App
 
-A professional event scheduling and signup application for SFBBO (San Francisco Bay Area Breastfeeding & Birth Options) volunteer management and event coordination.
+A professional event scheduling and signup application for SFBBO (San Francisco Bay Bird Observatory) volunteer management and event coordination.
 
 ## Getting Started
 
