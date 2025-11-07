@@ -19,6 +19,8 @@ import {
   Mail,
   Edit,
   Share2,
+  AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { AddToCalendarButton } from "add-to-calendar-button-react";
 import { firebaseOperations } from "./firebase";
@@ -85,6 +87,10 @@ const EventApp = () => {
     notes: "",
   });
   const [highlightedEventId, setHighlightedEventId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteEventId, setDeleteEventId] = useState(null);
+  const [deleteEventTitle, setDeleteEventTitle] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load initial data from Firebase with real-time updates
   useEffect(() => {
@@ -588,18 +594,33 @@ const EventApp = () => {
   };
 
   const deleteEvent = async (eventId, eventTitle) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete the event "${eventTitle}"? This cannot be undone.`
-      )
-    )
-      return;
+    setDeleteEventId(eventId);
+    setDeleteEventTitle(eventTitle);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!deleteEventId) return;
+    
     try {
-      await firebaseOperations.deleteEvent(eventId);
-      showToast("Event deleted.");
+      setIsDeleting(true);
+      await firebaseOperations.deleteEvent(deleteEventId);
+      showToast("Event deleted successfully.");
+      setShowDeleteModal(false);
+      setDeleteEventId(null);
+      setDeleteEventTitle("");
     } catch (error) {
-      alert("Failed to delete event.");
+      console.error("Error deleting event:", error);
+      showToast("Failed to delete event. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const cancelDeleteEvent = () => {
+    setShowDeleteModal(false);
+    setDeleteEventId(null);
+    setDeleteEventTitle("");
   };
 
   // Metrics modal handlers
@@ -776,44 +797,47 @@ const EventApp = () => {
                 <Share2 className="w-4 h-4" />
               </button>
               {isAdmin && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2 border-l-2 border-gray-300 pl-2 dark:border-gray-700">
                   {isPast && (
                     <button
                       onClick={() => openMetricsModal(event)}
-                      className={`p-2 rounded transition-colors ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                         isDarkMode
-                          ? "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-                          : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                          ? "text-gray-300 bg-gray-800/50 hover:bg-gray-700 hover:text-gray-100"
+                          : "text-gray-700 bg-gray-100 hover:bg-gray-200 hover:text-gray-900"
                       }`}
-                      aria-label="Add metrics"
+                      aria-label="Add post-event metrics"
                       title="Add post-event metrics"
                     >
                       <BarChart3 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Metrics</span>
                     </button>
                   )}
                   <button
                     onClick={() => openEditModal(event)}
-                    className={`p-2 rounded transition-colors ${
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                       isDarkMode
-                        ? "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                        ? "text-gray-300 bg-gray-800/50 hover:bg-gray-700 hover:text-gray-100"
+                        : "text-gray-700 bg-gray-100 hover:bg-gray-200 hover:text-gray-900"
                     }`}
                     aria-label="Edit event"
                     title="Edit event"
                   >
                     <Edit className="w-4 h-4" />
+                    <span className="hidden sm:inline">Edit</span>
                   </button>
                   <button
                     onClick={() => deleteEvent(event.id, event.title)}
-                    className={`p-2 rounded transition-colors ${
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-all ${
                       isDarkMode
-                        ? "text-gray-400 hover:text-red-400 hover:bg-gray-800"
-                        : "text-gray-500 hover:text-red-600 hover:bg-gray-100"
+                        ? "text-red-300 bg-red-900/30 hover:bg-red-900/50 hover:text-red-200"
+                        : "text-red-700 bg-red-100/60 hover:bg-red-200 hover:text-red-800"
                     }`}
                     aria-label="Delete event"
                     title="Delete event"
                   >
-                    <X className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Delete</span>
                   </button>
                 </div>
               )}
@@ -2365,6 +2389,85 @@ const EventApp = () => {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md px-4 animate-fade-in">
+          <div
+            className={`w-full max-w-md rounded-3xl border px-6 py-8 shadow-2xl animate-scale-in ${
+              isDarkMode ? "border-red-900/40 bg-gray-900" : "border-red-200 bg-white"
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete event confirmation"
+          >
+            <div className="mb-6 space-y-4 text-center">
+              <div className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${
+                isDarkMode ? "bg-red-900/30" : "bg-red-100"
+              }`}>
+                <AlertTriangle className={`h-6 w-6 ${
+                  isDarkMode ? "text-red-400" : "text-red-600"
+                }`} />
+              </div>
+              <div className="space-y-2">
+                <h2
+                  className={`text-2xl font-bold ${
+                    isDarkMode ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  Delete Event?
+                </h2>
+                <p
+                  className={`text-sm ${
+                    isDarkMode ? "text-gray-400" : "text-slate-600"
+                  }`}
+                >
+                  Are you sure you want to delete "{deleteEventTitle}"? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            
+            <div className={`mb-6 rounded-2xl border p-4 ${
+              isDarkMode
+                ? "border-red-900/30 bg-red-900/10"
+                : "border-red-100 bg-red-50"
+            }`}>
+              <p className={`text-xs font-medium ${
+                isDarkMode ? "text-red-300" : "text-red-700"
+              }`}>
+                ⚠️ This will permanently remove the event, all attendee records, and associated data from the system.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={confirmDeleteEvent}
+                disabled={isDeleting}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition shadow-md hover:shadow-lg ${
+                  isDarkMode
+                    ? "bg-red-700 text-white hover:bg-red-600 disabled:bg-gray-600"
+                    : "bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-300"
+                } disabled:cursor-not-allowed disabled:shadow-none`}
+                aria-label="Confirm delete"
+              >
+                {isDeleting && <Loader className="h-4 w-4 animate-spin" />}
+                {isDeleting ? "Deleting..." : "Yes, delete event"}
+              </button>
+              <button
+                onClick={cancelDeleteEvent}
+                disabled={isDeleting}
+                className={`inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition shadow-sm hover:shadow-md ${
+                  isDarkMode
+                    ? "bg-gray-800 text-gray-200 hover:bg-gray-700 disabled:bg-gray-700"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:bg-gray-200"
+                } disabled:cursor-not-allowed disabled:shadow-none`}
+                aria-label="Cancel delete"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
