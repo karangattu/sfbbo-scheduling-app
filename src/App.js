@@ -353,12 +353,6 @@ const EventApp = () => {
   const upcomingEvents = categorized.upcoming;
   const pastEvents = categorized.past;
 
-  const totalAttendees = useMemo(
-    () =>
-      events.reduce((acc, event) => acc + (event.attendees?.length || 0), 0),
-    [events]
-  );
-
   const uniqueVolunteers = useMemo(() => {
     const emailSet = new Set();
     events.forEach((event) => {
@@ -371,18 +365,30 @@ const EventApp = () => {
     return emailSet.size;
   }, [events]);
 
-  const totalCapacity = useMemo(
+  // Aggregate totals for upcoming events only (exclude past/archived events)
+  const upcomingTotalAttendees = useMemo(
     () =>
-      events.reduce(
-        (acc, event) =>
-          acc + (event.maxAttendees ? parseInt(event.maxAttendees) : 0),
+      (upcomingEvents || []).reduce(
+        (acc, event) => acc + (event.attendees?.length || 0),
         0
       ),
-    [events]
+    [upcomingEvents]
   );
 
+  const upcomingTotalCapacity = useMemo(
+    () =>
+      (upcomingEvents || []).reduce(
+        (acc, event) => acc + (event.maxAttendees ? parseInt(event.maxAttendees) : 0),
+        0
+      ),
+    [upcomingEvents]
+  );
+
+  // Spots remaining should reflect upcoming events only
   const remainingSpots =
-    totalCapacity > 0 ? Math.max(totalCapacity - totalAttendees, 0) : null;
+    upcomingTotalCapacity > 0
+      ? Math.max(upcomingTotalCapacity - upcomingTotalAttendees, 0)
+      : null;
 
   const statsHighlights = [
     {
@@ -395,8 +401,8 @@ const EventApp = () => {
       icon: Calendar,
     },
     {
-      label: "Volunteer RSVPs",
-      value: totalAttendees,
+      label: "Upcoming RSVPs",
+      value: upcomingTotalAttendees,
       caption:
         uniqueVolunteers > 0
           ? `${uniqueVolunteers} unique volunteers`
@@ -405,10 +411,10 @@ const EventApp = () => {
     },
     {
       label: remainingSpots !== null ? "Spots remaining" : "Active listings",
-      value: remainingSpots !== null ? remainingSpots : events.length,
+      value: remainingSpots !== null ? remainingSpots : upcomingEvents.length,
       caption:
         remainingSpots !== null
-          ? `${totalCapacity} total capacity`
+          ? `${upcomingTotalCapacity} total capacity`
           : "Across all categories",
       icon: ClipboardCheck,
     },
